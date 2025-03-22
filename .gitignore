@@ -1,0 +1,13 @@
+__pycache__
+/video_classification/datasets/train/annotation/*
+/video_classification/datasets/train/data/*
+/video_classification/datasets/validation/annotation/*
+/video_classification/datasets/validation/data/*
+
+/object_detection/datasets/train/annotation/*
+/object_detection/datasets/train/data/*
+/object_detection/datasets/validation/annotation/*
+/object_detection/datasets/validation/data/*
+
+*.cache
+runs
