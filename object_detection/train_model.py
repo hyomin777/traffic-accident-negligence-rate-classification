@@ -2,7 +2,7 @@ from ultralytics import YOLO
 
 model = YOLO('best.pt')
 
-data_config = 'data_config.yaml'
+data_config = 'yolo_config.yaml'
 
 results = model.train(
     data = data_config,

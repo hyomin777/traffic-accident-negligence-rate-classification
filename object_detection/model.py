@@ -1,11 +1,16 @@
-from ultralytics import YOLO
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
 from PIL import Image
+from utils import load_yolo_model
 
-
-model = YOLO("best.pt")
+yolo_model = load_yolo_model()
 
 image_path = "test_image.png"
-image = Image.open(image_path)
+image = Image.open(image_path).convert("RGB")
 
-results = model(image)
-print(results)
+results = yolo_model(image)
+
+
