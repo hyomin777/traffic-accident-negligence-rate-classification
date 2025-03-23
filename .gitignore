@@ -3,4 +3,5 @@ datasets
 labels
 *.cache
 *.pt
+*.pth
 runs
