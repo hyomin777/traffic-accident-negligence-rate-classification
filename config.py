@@ -42,10 +42,12 @@ MAX_DETACTIONS = 12
 
 MAX_FRAMES = 32
 IMAGE_SIZE = (320, 640) 
-BATCH_SIZE = 2
+BATCH_SIZE = 1
 
-EPOCHS = 30
-LR = 0.0001
+EPOCHS = 10
+LR = 0.01
 
-VIDEO_DIR_PATH = 'datasets/train/data'
-ANNOTATION_DIR_PATH = 'datasets/train/annotation'
+VIDEO_DIR_PATH = 'datasets/data'
+ANNOTATION_DIR_PATH = 'datasets/annotation'
+
+PRETRAINED = True

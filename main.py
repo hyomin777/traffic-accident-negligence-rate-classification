@@ -4,7 +4,7 @@ from torchvision import transforms
 from video_classification.model import AccidentAnalysisModel
 from video_classification.dataset import TrafficAccidentDataset
 from utils import load_yolo_model
-from config import MAX_FRAMES, BATCH_SIZE, NUM_NEGLIGENCE_CLASSES, VIDEO_DIR_PATH, ANNOTATION_DIR_PATH
+from config import MAX_FRAMES, BATCH_SIZE, NUM_NEGLIGENCE_CLASSES, VIDEO_DIR_PATH, ANNOTATION_DIR_PATH, PRETRAINED
 from train import train_model, test_model
 
 
@@ -59,13 +59,15 @@ def main():
         pin_memory=True
     )
     
-    model = AccidentAnalysisModel(num_classes=NUM_NEGLIGENCE_CLASSES, pretrained=True)
+    model = AccidentAnalysisModel(num_classes=NUM_NEGLIGENCE_CLASSES, pretrained=PRETRAINED)
+    if PRETRAINED:
+        pretrained_state_dict = torch.load('best_accident_model.pth.pth')
+        model.load_state_dict(pretrained_state_dict)
+        
     trained_model = train_model(
         model,
         train_loader,
-        val_loader,
-        num_epochs=30,
-        lr=0.0001
+        val_loader
     )
 
     accuracy, confusion_matrix, report = test_model(trained_model, test_loader)
