@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 import torch
 import torch.nn as nn
-from torchvision.models.video import swin3d_t, Swin3D_T_Weights
+from torchvision.models.video import swin3d_t
 from config import NUM_NEGLIGENCE_CLASSES, MAX_DETACTIONS
 
             
@@ -14,17 +14,16 @@ class AccidentAnalysisModel(nn.Module):
             self, 
             num_classes=NUM_NEGLIGENCE_CLASSES, 
             max_objects = MAX_DETACTIONS,
-            pretrained=True):
+            pretrained=False):
         super().__init__()
         
+        self.backbone = swin3d_t(weights=None)
         if pretrained:
-            self.backbone = swin3d_t(weights=Swin3D_T_Weights.KINETICS400_V1)
-        else:
-            self.backbone = swin3d_t(weights=None)
+            pretrained_state_dict = torch.load('swin3d_t-7615ae03.pth')
+            self.backbone.load_state_dict(pretrained_state_dict)
             
         backbone_out_dim = self.backbone.head.in_features
         self.backbone.head = nn.Identity()
-        backbone_out_dim = 256
         
         self.yolo_encoder = nn.Sequential(
             nn.Linear(max_objects * 6, 512),
@@ -68,31 +67,23 @@ class AccidentAnalysisModel(nn.Module):
         seq_len = frames.shape[1]
         
         frames = frames.permute(0, 2, 1, 3, 4)
-        video_features = self.backbone(frames).view(batch_size, -1)
+        video_features = self.backbone(frames)
 
         if metadata is None:
             metadata = self.metadata_predictor(video_features)
         
-        # (B, T, N, 6) -> (B, T, N*6)
         yolo_flat = yolo_detections.reshape(batch_size, seq_len, -1)
-        
         yolo_features = []
         for t in range(seq_len):
-            # (B, N*6)
-            frame_yolo = yolo_flat[:, t, :] 
-            # (B, 256)
-            frame_features = self.yolo_encoder(frame_yolo)  
+            frame_yolo = yolo_flat[:, t, :]
+            frame_features = self.yolo_encoder(frame_yolo)
             yolo_features.append(frame_features)
         
-        # (B, T, 256)
         yolo_features = torch.stack(yolo_features, dim=1)
-        # (B, T, 256)
-        yolo_temporal = self.temporal_encoder(yolo_features) 
-        # (B, 256)
-        yolo_pooled = torch.mean(yolo_temporal, dim=1)  
+        yolo_temporal = self.temporal_encoder(yolo_features)
+        yolo_pooled = torch.mean(yolo_temporal, dim=1)
         
-        # (B, 128)
-        metadata_features = self.metadata_encoder(metadata)  
+        metadata_features = self.metadata_encoder(metadata)
 
         combined_features = torch.cat([video_features, yolo_pooled, metadata_features], dim=1)
         logits = self.fusion(combined_features)
