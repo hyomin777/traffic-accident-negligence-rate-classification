@@ -8,6 +8,6 @@ results = model.train(
     data = data_config,
     epochs = 50,
     imgsz = 640,
-    batch = 32,
+    batch = 128,
     name = 'object_detection'
 )

@@ -1,5 +1,8 @@
 import sys
 import os
+
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
 import json
 from config import OBJECT_CLASSES
 
@@ -37,7 +40,10 @@ def convert_annotations(dir_path, output_folder):
 
 
 if __name__ == '__main__':
-    json_dir = os.path.join('.', 'object_detection', 'datasets', 'train', 'annotation')
-    output_folder = os.path.join('.', 'object_detection', 'datasets', 'train', 'data')
+    json_dir = os.path.join('.', 'datasets', 'train', 'annotation')
+    output_folder = os.path.join('.', 'datasets', 'train', 'data')
+    convert_annotations(json_dir, output_folder)
 
+    json_dir = os.path.join('.', 'datasets', 'validation', 'annotation')
+    output_folder = os.path.join('.', 'datasets', 'validation', 'data')
     convert_annotations(json_dir, output_folder)
