@@ -116,7 +116,7 @@ class TrafficAccidentDataset(Dataset):
         frames_tensor = torch.stack(frames)  # (T, C, H, W)
         yolo_tensor = torch.stack(yolo_tensors)  # (T, max_detections, 6)
         
-        negligence_category = get_negligence_category(sample['rateA'], sample['rateB'])
+        negligence_category = get_negligence_category(sample['rateA'])
         
         metadata = torch.tensor([
             sample['accident_type'],

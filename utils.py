@@ -41,11 +41,11 @@ def yolo_results_to_tensor(results, max_detections=MAX_DETACTIONS):
         detections = np.vstack([detections, padding])
     
     return torch.from_numpy(detections).float()
-    
 
-def get_negligence_category(rateA:int, rateB=None):
-    if rateB is None:
-        rateB = 100 - rateA
+def get_negligence_category(rateA:int):
+    if rateA % 10 != 0:
+        rateA = rateA // 10 * 10 
+    rateB = 100 - rateA
     category = f"{rateA}:{rateB}"
     return NEGLIGENCE_CATEGORIES[category]
 

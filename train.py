@@ -4,14 +4,13 @@ import torch.optim as optim
 import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import confusion_matrix, classification_report
-from config import EPOCHS, LR, NUM_NEGLIGENCE_CLASSES
+from config import DEVICE, EPOCHS, LR, NUM_NEGLIGENCE_CLASSES
 
 
 def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, lr=LR):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
+    model = model.to(DEVICE)
     
-    criterion = nn.CrossEntropyLoss().to(device)
+    criterion = nn.CrossEntropyLoss().to(DEVICE)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
     
@@ -28,10 +27,10 @@ def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, l
         
         for batch_idx, batch in enumerate(train_loader):
             # GPU로 데이터 비동기 이동 (non_blocking)
-            frames = batch['frames'].to(device, non_blocking=True)
-            yolo_detections = batch['yolo_detections'].to(device, non_blocking=True)
-            targets = batch['negligence_category'].to(device, non_blocking=True)
-            metadata = batch['metadata'].to(device, non_blocking=True)
+            frames = batch['frames'].to(DEVICE, non_blocking=True)
+            yolo_detections = batch['yolo_detections'].to(DEVICE, non_blocking=True)
+            targets = batch['negligence_category'].to(DEVICE, non_blocking=True)
+            metadata = batch['metadata'].to(DEVICE, non_blocking=True)
             
             optimizer.zero_grad()
             
@@ -60,14 +59,14 @@ def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, l
         val_loss = 0.0
         val_correct = 0
         val_total = 0
-        confusion = torch.zeros(NUM_NEGLIGENCE_CLASSES, NUM_NEGLIGENCE_CLASSES, dtype=torch.long).to(device)
+        confusion = torch.zeros(NUM_NEGLIGENCE_CLASSES, NUM_NEGLIGENCE_CLASSES, dtype=torch.long).to(DEVICE)
         
         with torch.no_grad():
             for batch in val_loader:
-                frames = batch['frames'].to(device, non_blocking=True)
-                yolo_detections = batch['yolo_detections'].to(device, non_blocking=True)
-                targets = batch['negligence_category'].to(device, non_blocking=True)
-                metadata = batch['metadata'].to(device, non_blocking=True)
+                frames = batch['frames'].to(DEVICE, non_blocking=True)
+                yolo_detections = batch['yolo_detections'].to(DEVICE, non_blocking=True)
+                targets = batch['negligence_category'].to(DEVICE, non_blocking=True)
+                metadata = batch['metadata'].to(DEVICE, non_blocking=True)
                 
                 with torch.cuda.amp.autocast():
                     outputs = model(frames, yolo_detections, metadata)
@@ -107,8 +106,7 @@ def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, l
 
 
 def test_model(model, test_loader):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
+    model = model.to(DEVICE)
     model.eval()
     
     all_preds = []
@@ -116,10 +114,10 @@ def test_model(model, test_loader):
     
     with torch.no_grad():
         for batch in test_loader:
-            frames = batch['frames'].to(device)
-            yolo_detections = batch['yolo_detections'].to(device)
-            targets = batch['negligence_category'].to(device)
-            metadata = batch['metadata'].to(device)
+            frames = batch['frames'].to(DEVICE)
+            yolo_detections = batch['yolo_detections'].to(DEVICE)
+            targets = batch['negligence_category'].to(DEVICE)
+            metadata = batch['metadata'].to(DEVICE)
             
             outputs = model(frames, yolo_detections, metadata)
             _, predicted = outputs.max(1)

@@ -13,7 +13,7 @@ class AccidentAnalysisModel(nn.Module):
     def __init__(
             self, 
             num_classes=NUM_NEGLIGENCE_CLASSES, 
-            max_objects = MAX_DETACTIONS,
+            max_objects=MAX_DETACTIONS,
             pretrained=False):
         super().__init__()
         
