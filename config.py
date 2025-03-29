@@ -54,4 +54,4 @@ LR = 0.01
 VIDEO_DIR_PATH = 'video_datasets/data'
 ANNOTATION_DIR_PATH = 'video_datasets/annotation'
 
-PRETRAINED = False
+PRETRAINED = True

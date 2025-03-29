@@ -61,7 +61,7 @@ def main():
     
     model = AccidentAnalysisModel(num_classes=NUM_NEGLIGENCE_CLASSES, pretrained=PRETRAINED)
     if PRETRAINED:
-        pretrained_state_dict = torch.load('best_accident_model.pth.pth')
+        pretrained_state_dict = torch.load('best_accident_model.pth')
         model.load_state_dict(pretrained_state_dict)
         
     trained_model = train_model(
