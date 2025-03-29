@@ -7,7 +7,7 @@ from sklearn.metrics import confusion_matrix, classification_report
 from config import EPOCHS, LR, NUM_NEGLIGENCE_CLASSES
 
 
-def train_model(model:nn.Module, train_loader, val_loader, num_epochs=EPOCHS, lr=LR):
+def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, lr=LR):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
     
@@ -15,38 +15,47 @@ def train_model(model:nn.Module, train_loader, val_loader, num_epochs=EPOCHS, lr
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
     
+    # AMP를 위한 GradScaler 초기화
+    scaler = torch.cuda.amp.GradScaler()
+    
     best_val_acc = 0.0
     
-    for epoch in tqdm(range(num_epochs)):
+    for epoch in tqdm(range(num_epochs), desc="Epochs"):
         model.train()
         train_loss = 0.0
         train_correct = 0
         train_total = 0
         
-        for batch_idx, batch in tqdm(enumerate(train_loader)):
-            frames = batch['frames'].to(device)
-            yolo_detections = batch['yolo_detections'].to(device)
-            targets = batch['negligence_category'].to(device)
-            metadata = batch['metadata'].to(device)
+        for batch_idx, batch in enumerate(train_loader):
+            # GPU로 데이터 비동기 이동 (non_blocking)
+            frames = batch['frames'].to(device, non_blocking=True)
+            yolo_detections = batch['yolo_detections'].to(device, non_blocking=True)
+            targets = batch['negligence_category'].to(device, non_blocking=True)
+            metadata = batch['metadata'].to(device, non_blocking=True)
             
             optimizer.zero_grad()
-            outputs = model(frames, yolo_detections, metadata)
-            loss = criterion(outputs, targets)
-            loss.backward()
-            optimizer.step()
+            
+            # AMP 자동 캐스팅 사용
+            with torch.cuda.amp.autocast():
+                outputs = model(frames, yolo_detections, metadata)
+                loss = criterion(outputs, targets)
+            
+            # AMP 스케일러로 역전파 및 옵티마이저 스텝
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             
             train_loss += loss.item()
             _, predicted = outputs.max(1)
             train_total += targets.size(0)
             train_correct += predicted.eq(targets).sum().item()
-            
-            if batch_idx % 10 == 0:
-                print(f'Epoch: {epoch+1}/{num_epochs}, Batch: {batch_idx}/{len(train_loader)}, '
-                      f'Loss: {loss.item():.4f}')
+
+            if batch_idx % 20 == 0:
+                print(f'Epoch: {epoch+1}/{num_epochs}, Batch: {batch_idx}/{len(train_loader)}, Loss: {loss.item():.4f}')
         
         train_acc = 100.0 * train_correct / train_total
         
-
+        # validation
         model.eval()
         val_loss = 0.0
         val_correct = 0
@@ -55,19 +64,21 @@ def train_model(model:nn.Module, train_loader, val_loader, num_epochs=EPOCHS, lr
         
         with torch.no_grad():
             for batch in val_loader:
-                frames = batch['frames'].to(device)
-                yolo_detections = batch['yolo_detections'].to(device)
-                targets = batch['negligence_category'].to(device)
-                metadata = batch['metadata'].to(device)
+                frames = batch['frames'].to(device, non_blocking=True)
+                yolo_detections = batch['yolo_detections'].to(device, non_blocking=True)
+                targets = batch['negligence_category'].to(device, non_blocking=True)
+                metadata = batch['metadata'].to(device, non_blocking=True)
                 
-                outputs = model(frames, yolo_detections, metadata)
-                loss = criterion(outputs, targets)
+                with torch.cuda.amp.autocast():
+                    outputs = model(frames, yolo_detections, metadata)
+                    loss = criterion(outputs, targets)
                 
                 val_loss += loss.item()
                 _, predicted = outputs.max(1)
                 val_total += targets.size(0)
                 val_correct += predicted.eq(targets).sum().item()
                 
+                # 배치 단위로 confusion matrix 업데이트
                 for t, p in zip(targets.view(-1), predicted.view(-1)):
                     confusion[t.long(), p.long()] += 1
         
@@ -80,6 +91,7 @@ def train_model(model:nn.Module, train_loader, val_loader, num_epochs=EPOCHS, lr
               f'Val Loss: {val_loss/len(val_loader):.4f}, '
               f'Val Acc: {val_acc:.2f}%')
         
+        # 모델 저장 조건
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             torch.save(model.state_dict(), 'best_accident_model.pth')
@@ -92,6 +104,7 @@ def train_model(model:nn.Module, train_loader, val_loader, num_epochs=EPOCHS, lr
                 print(f'Class {i} (Negligence {i*10}:{100-i*10}): {acc:.2f}%')
     
     return model
+
 
 def test_model(model, test_loader):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
