@@ -45,7 +45,7 @@ def test():
     
     model = AccidentAnalysisModel(num_classes=NUM_NEGLIGENCE_CLASSES, pretrained=PRETRAINED)
     if PRETRAINED:
-        pretrained_state_dict = torch.load('best_accident_model.pth.pth')
+        pretrained_state_dict = torch.load('best_accident_model.pth')
         model.load_state_dict(pretrained_state_dict)
 
     accuracy, confusion_matrix, report = test_model(model, test_loader)
