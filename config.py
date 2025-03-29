@@ -1,3 +1,5 @@
+import torch
+
 NEGLIGENCE_CATEGORIES = {
     "0:100": 0, 
     "10:90": 1, 
@@ -36,6 +38,8 @@ CLASS_LIST = [
     'bike'
 ]
 
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 NUM_OBJECT_CLASSES = 9
 NUM_NEGLIGENCE_CLASSES = 11
 MAX_DETACTIONS = 12
@@ -47,7 +51,7 @@ BATCH_SIZE = 16
 EPOCHS = 10
 LR = 0.01
 
-VIDEO_DIR_PATH = 'datasets/data'
-ANNOTATION_DIR_PATH = 'datasets/annotation'
+VIDEO_DIR_PATH = 'video_datasets/data'
+ANNOTATION_DIR_PATH = 'video_datasets/annotation'
 
-PRETRAINED = True
+PRETRAINED = False

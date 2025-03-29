@@ -4,7 +4,7 @@ from torchvision import transforms
 from video_classification.model import AccidentAnalysisModel
 from video_classification.dataset import TrafficAccidentDataset
 from utils import load_yolo_model
-from config import MAX_FRAMES, BATCH_SIZE, NUM_NEGLIGENCE_CLASSES, VIDEO_DIR_PATH, ANNOTATION_DIR_PATH, PRETRAINED
+from config import DEVICE, MAX_FRAMES, BATCH_SIZE, NUM_NEGLIGENCE_CLASSES, VIDEO_DIR_PATH, ANNOTATION_DIR_PATH, PRETRAINED
 from train import train_model, test_model
 
 
@@ -17,7 +17,7 @@ def main():
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     
-    yolo_model = load_yolo_model("best.pt")
+    yolo_model = load_yolo_model("best.pt").to(DEVICE)
     
     dataset = TrafficAccidentDataset(
         video_dir=video_dir,
@@ -79,4 +79,6 @@ def main():
     print(report)
 
 if __name__ == "__main__":
+    import multiprocessing as mp
+    mp.set_start_method("spawn", force=True)
     main()

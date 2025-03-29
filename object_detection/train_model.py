@@ -1,6 +1,6 @@
 from ultralytics import YOLO
 
-model = YOLO('best.pt')
+model = YOLO('yolo11n.pt')
 
 data_config = 'yolo_config.yaml'
 
@@ -9,5 +9,5 @@ results = model.train(
     epochs = 50,
     imgsz = 640,
     batch = 128,
-    name = 'object_detection'
+    name = 'object_detection',
 )
