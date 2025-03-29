@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 import torch
 import torch.nn as nn
 from torchvision.models.video import swin3d_t
-from config import NUM_NEGLIGENCE_CLASSES, MAX_DETACTIONS
+from config import NUM_NEGLIGENCE_CLASSES, MAX_DETACTIONS, PRETRAINED
 
             
 class AccidentAnalysisModel(nn.Module):
@@ -14,11 +14,11 @@ class AccidentAnalysisModel(nn.Module):
             self, 
             num_classes=NUM_NEGLIGENCE_CLASSES, 
             max_objects=MAX_DETACTIONS,
-            pretrained=False):
+            pretrained=PRETRAINED):
         super().__init__()
         
         self.backbone = swin3d_t(weights=None)
-        if pretrained:
+        if not pretrained:
             pretrained_state_dict = torch.load('swin3d_t-7615ae03.pth')
             self.backbone.load_state_dict(pretrained_state_dict)
             
