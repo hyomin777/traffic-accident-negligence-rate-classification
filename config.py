@@ -56,8 +56,3 @@ BATCH_SIZE = 4
 EPOCHS = 10
 LR = 0.01
 AUX_LAMBDA = 0.1
-
-VIDEO_DIR_PATH = 'video_datasets/data'
-ANNOTATION_DIR_PATH = 'video_datasets/annotation'
-
-PRETRAINED = True

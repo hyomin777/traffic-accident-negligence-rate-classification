@@ -13,8 +13,7 @@ from config import (
     NUM_ACCIDENT_PLACES, 
     NUM_ACCIDENT_PLACE_FEATURES,
     NUM_VEHICLE_A_PROGRESS_INFO,
-    NUM_VEHICLE_B_PROGRESS_INFO, 
-    PRETRAINED
+    NUM_VEHICLE_B_PROGRESS_INFO
 )
 
             
@@ -28,11 +27,11 @@ class AccidentAnalysisModel(nn.Module):
             num_accident_place_features=NUM_ACCIDENT_PLACE_FEATURES,
             num_vehicle_a_progress_info=NUM_VEHICLE_A_PROGRESS_INFO,
             num_vehicle_b_progress_info=NUM_VEHICLE_B_PROGRESS_INFO,
-            pretrained=PRETRAINED):
+            weights_exist=False):
         super().__init__()
         
         self.backbone = swin3d_t(weights=None)
-        if pretrained:
+        if not weights_exist:
             pretrained_state_dict = torch.load('swin3d_t-7615ae03.pth')
             self.backbone.load_state_dict(pretrained_state_dict)
             
