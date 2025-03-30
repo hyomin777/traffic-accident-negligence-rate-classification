@@ -5,6 +5,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torchvision.models.video import swin3d_t
 from config import (
     NUM_NEGLIGENCE_CLASSES, 
@@ -29,7 +30,7 @@ class AccidentAnalysisModel(nn.Module):
             num_vehicle_b_progress_info=NUM_VEHICLE_B_PROGRESS_INFO,
             weights_exist=False):
         super().__init__()
-        
+        self.topk = 5
         self.backbone = swin3d_t(weights=None)
         if not weights_exist:
             pretrained_state_dict = torch.load('swin3d_t-7615ae03.pth')
@@ -67,7 +68,7 @@ class AccidentAnalysisModel(nn.Module):
             )
         
         self.metadata_encoder = nn.Sequential(
-            nn.Linear(5, 64), 
+            nn.Linear(5*self.topk, 64), 
             nn.ReLU(),
             nn.Linear(64, 128),
             nn.ReLU()
@@ -94,19 +95,14 @@ class AccidentAnalysisModel(nn.Module):
         type_pred, place_pred, place_feature_pred, a_progress_info_pred, b_progress_info_pred = self.metadata_predictor(video_features)
         
         if metadata is None:
-            type_pred_label = type_pred.argmax(dim=1, keepdim=True).float()  # (B,1)
-            place_pred_label = place_pred.argmax(dim=1, keepdim=True).float()  # (B,1)
-            place_feature_pred_label = place_feature_pred.argmax(dim=1, keepdim=True).float()  # (B,1)
-            a_progress_info_pred_label = a_progress_info_pred.argmax(dim=1, keepdim=True).float() # (B,1)
-            b_progress_info_pred_label = b_progress_info_pred.argmax(dim=1, keepdim=True).float() # (B,1)
             meta_input = torch.cat([
-                type_pred_label, place_pred_label, 
-                place_feature_pred_label, 
-                a_progress_info_pred_label, 
-                b_progress_info_pred_label
-                ], dim=1) # (B,5)
+                self.get_topk_probs(type_pred),
+                self.get_topk_probs(place_pred),
+                self.get_topk_probs(place_feature_pred),
+                self.get_topk_probs(a_progress_info_pred),
+                self.get_topk_probs(b_progress_info_pred)
+            ], dim=1)  # (B, 5*k)
         else:
-            # (B, 5)
             meta_input = metadata.float()
 
         metadata_features = self.metadata_encoder(meta_input)
@@ -125,6 +121,11 @@ class AccidentAnalysisModel(nn.Module):
         combined_features = torch.cat([video_features, yolo_pooled, metadata_features], dim=1)
         logits = self.fusion(combined_features)
         return logits, (type_pred, place_pred, place_feature_pred, a_progress_info_pred, b_progress_info_pred)
+    
+    def get_topk_probs(self, tensor):
+        probs = F.softmax(tensor, dim=1)
+        topk_probs, _ = torch.topk(probs, self.topk, dim=1)
+        return topk_probs 
 
 
 class MetadataPredictor(nn.Module):
@@ -155,14 +156,14 @@ class MetadataPredictor(nn.Module):
             nn.Linear(64, num_accident_place_features)
         )
         self.a_progress_info_head = nn.Sequential(
-            nn.Linear(dim, 64),
+            nn.Linear(dim, 128),
             nn.ReLU(),
-            nn.Linear(64, num_vehicle_a_progress_info)
+            nn.Linear(128, num_vehicle_a_progress_info)
         )
         self.b_progress_info_head = nn.Sequential(
-            nn.Linear(dim, 64),
+            nn.Linear(dim, 128),
             nn.ReLU(),
-            nn.Linear(64, num_vehicle_b_progress_info)
+            nn.Linear(128, num_vehicle_b_progress_info)
         )
     
     def forward(self, video_features):
