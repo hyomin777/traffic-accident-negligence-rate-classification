@@ -18,7 +18,7 @@ def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, l
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
     
     # AMP를 위한 GradScaler 초기화
-    scaler = torch.cuda.amp.GradScaler()
+    scaler = torch.amp.GradScaler(DEVICE)
     
     best_val_acc = 0.0
     
@@ -38,7 +38,7 @@ def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, l
             optimizer.zero_grad()
             
             # AMP 자동 캐스팅 사용
-            with torch.cuda.amp.autocast():
+            with torch.amp.autocast(DEVICE):
                 outputs, meta_preds = model(frames, yolo_detections, metadata)
                 loss_cls = criterion(outputs, targets)
 
@@ -89,7 +89,7 @@ def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, l
                 targets = batch['negligence_category'].to(DEVICE, non_blocking=True)
                 metadata = batch['metadata'].to(DEVICE, non_blocking=True)
                 
-                with torch.cuda.amp.autocast():
+                with torch.amp.autocast(DEVICE):
                     outputs, meta_preds = model(frames, yolo_detections, metadata)
                     loss_cls = criterion(outputs, targets)
 
