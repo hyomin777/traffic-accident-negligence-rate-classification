@@ -62,7 +62,8 @@ class AccidentAnalysisModel(nn.Module):
             num_accident_places, 
             num_accident_place_features,
             num_vehicle_a_progress_info,
-            num_vehicle_b_progress_info
+            num_vehicle_b_progress_info,
+            backbone_out_dim
             )
         
         self.metadata_encoder = nn.Sequential(
@@ -134,32 +135,32 @@ class MetadataPredictor(nn.Module):
             num_accident_place_features,
             num_vehicle_a_progress_info,
             num_vehicle_b_progress_info,
-            common_dim=256
+            dim
             ):
         super().__init__()
 
         self.accident_type_head = nn.Sequential(
-            nn.Linear(common_dim, 256),
+            nn.Linear(dim, 256),
             nn.ReLU(),
             nn.Linear(256, num_accident_types)
         )
         self.accident_place_head = nn.Sequential(
-            nn.Linear(common_dim, 64),
+            nn.Linear(dim, 64),
             nn.ReLU(),
             nn.Linear(64, num_accident_places)
         )
         self.accident_place_feature_head = nn.Sequential(
-            nn.Linear(common_dim, 64),
+            nn.Linear(dim, 64),
             nn.ReLU(),
             nn.Linear(64, num_accident_place_features)
         )
         self.a_progress_info_head = nn.Sequential(
-            nn.Linear(common_dim, 64),
+            nn.Linear(dim, 64),
             nn.ReLU(),
             nn.Linear(64, num_vehicle_a_progress_info)
         )
         self.b_progress_info_head = nn.Sequential(
-            nn.Linear(common_dim, 64),
+            nn.Linear(dim, 64),
             nn.ReLU(),
             nn.Linear(64, num_vehicle_b_progress_info)
         )
