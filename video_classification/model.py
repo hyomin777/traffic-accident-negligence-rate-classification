@@ -39,8 +39,8 @@ class AccidentAnalysisModel(nn.Module):
         backbone_out_dim = self.backbone.head.in_features
         self.backbone.head = nn.Identity()
 
-        self.video_to_yolo_attention = CrossAttention(dim=backbone_out_dim)
-        self.yolo_to_meta_attention = CrossAttention(dim=256)
+        self.video_to_yolo_attention = CrossAttention(backbone_out_dim)
+        self.yolo_to_meta_attention = CrossAttention(256)
         
         self.yolo_encoder = nn.Sequential(
             nn.Linear(max_objects * 6, 512),
