@@ -10,7 +10,7 @@ import json
 import cv2
 from pathlib import Path
 from utils import load_yolo_model, detect_objects_in_frame, yolo_results_to_tensor, get_negligence_category
-from config import IMAGE_SIZE
+from config import IMAGE_SIZE, NUM_ACCIDENT_TYPES, NUM_ACCIDENT_PLACES, NUM_ACCIDENT_PLACE_FEATURES, NUM_VEHICLE_A_PROGRESS_INFO, NUM_VEHICLE_B_PROGRESS_INFO
 
 
 class TrafficAccidentDataset(Dataset):
@@ -43,11 +43,27 @@ class TrafficAccidentDataset(Dataset):
                 rateA = data['video'].get('accident_negligence_rateA', 50)
                 rateB = data['video'].get('accident_negligence_rateB', 50)
             
-            accident_type = data['video'].get('traffic_accident_type', 0)
-            accident_place = data['video'].get('accident_place', 0)
-            accident_place_feature = data['video'].get('accident_place_feature', 0)
-            vehicle_a_progress = data['video'].get('vehicle_a_progress_info', 0)
-            vehicle_b_progress = data['video'].get('vehicle_b_progress_info', 0)
+            accident_type = int(data['video'].get('traffic_accident_type', 0))
+            accident_place = int(data['video'].get('accident_place', 0))
+            accident_place_feature = int(data['video'].get('accident_place_feature', 0))
+            vehicle_a_progress = int(data['video'].get('vehicle_a_progress_info', 0))
+            vehicle_b_progress = int(data['video'].get('vehicle_b_progress_info', 0))
+
+            if accident_type < 0 or accident_type >= NUM_ACCIDENT_TYPES:
+                print(f"[{json_file.name}] Excluding sample due to out-of-range accident_type: {accident_type}")
+                continue
+            if accident_place < 0 or accident_place >= NUM_ACCIDENT_PLACES:
+                print(f"[{json_file.name}] Excluding sample due to out-of-range accident_place: {accident_place}")
+                continue
+            if accident_place_feature < 0 or accident_place_feature >= NUM_ACCIDENT_PLACE_FEATURES:
+                print(f"[{json_file.name}] Excluding sample due to out-of-range accident_place_feature: {accident_place_feature}")
+                continue
+            if vehicle_a_progress < 0 or vehicle_a_progress >= NUM_VEHICLE_A_PROGRESS_INFO:
+                print(f"[{json_file.name}] Excluding sample due to out-of-range vehicle_a_progress_info: {vehicle_a_progress}")
+                continue
+            if vehicle_b_progress < 0 or vehicle_b_progress >= NUM_VEHICLE_B_PROGRESS_INFO:
+                print(f"[{json_file.name}] Excluding sample due to out-of-range vehicle_b_progress_info: {vehicle_b_progress}")
+                continue
             
             self.samples.append({
                 'video_path': str(video_path),
