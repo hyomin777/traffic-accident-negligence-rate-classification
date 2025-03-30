@@ -30,6 +30,7 @@ class AccidentAnalysisModel(nn.Module):
             num_vehicle_b_progress_info=NUM_VEHICLE_B_PROGRESS_INFO,
             weights_exist=False):
         super().__init__()
+
         self.backbone = swin3d_t(weights=None)
         if not weights_exist:
             pretrained_state_dict = torch.load('swin3d_t-7615ae03.pth')
@@ -37,6 +38,9 @@ class AccidentAnalysisModel(nn.Module):
             
         backbone_out_dim = self.backbone.head.in_features
         self.backbone.head = nn.Identity()
+
+        self.video_to_yolo_attention = CrossAttention(dim=backbone_out_dim)
+        self.yolo_to_meta_attention = CrossAttention(dim=256)
         
         self.yolo_encoder = nn.Sequential(
             nn.Linear(max_objects * 6, 512),
@@ -66,8 +70,16 @@ class AccidentAnalysisModel(nn.Module):
             backbone_out_dim
             )
         
+        self.meta_dim = (
+            num_accident_types +
+            num_accident_places +
+            num_accident_place_features +
+            num_vehicle_a_progress_info +
+            num_vehicle_b_progress_info
+        )
+        
         self.metadata_encoder = nn.Sequential(
-            nn.Linear(5, 64), 
+            nn.Linear(self.meta_dim, 64), 
             nn.ReLU(),
             nn.Linear(64, 128),
             nn.ReLU()
@@ -94,12 +106,12 @@ class AccidentAnalysisModel(nn.Module):
         type_pred, place_pred, place_feature_pred, a_progress_info_pred, b_progress_info_pred = self.metadata_predictor(video_features)
         
         meta_input = torch.cat([
-                F.softmax(type_pred),
-                F.softmax(place_pred),
-                F.softmax(place_feature_pred),
-                F.softmax(a_progress_info_pred),
-                F.softmax(b_progress_info_pred)
-        ], dim=1)  # (B, 5)
+            F.softmax(type_pred, dim=1),
+            F.softmax(place_pred, dim=1),
+            F.softmax(place_feature_pred, dim=1),
+            F.softmax(a_progress_info_pred, dim=1),
+            F.softmax(b_progress_info_pred, dim=1)
+        ], dim=1)  # (B, 864)
         metadata_features = self.metadata_encoder(meta_input)
 
         yolo_flat = yolo_detections.reshape(batch_size, seq_len, -1)
@@ -113,7 +125,10 @@ class AccidentAnalysisModel(nn.Module):
         yolo_temporal = self.temporal_encoder(yolo_features)
         yolo_pooled = torch.mean(yolo_temporal, dim=1)
 
-        combined_features = torch.cat([video_features, yolo_pooled, metadata_features], dim=1)
+        attended_video = self.video_to_yolo_attention(video_features, yolo_pooled)
+        attended_yolo = self.yolo_to_meta_attention(yolo_pooled, metadata_features)
+
+        combined_features = torch.cat([attended_video, attended_yolo, metadata_features], dim=1)
         logits = self.fusion(combined_features)
         return logits, (type_pred, place_pred, place_feature_pred, a_progress_info_pred, b_progress_info_pred)
 
@@ -163,3 +178,22 @@ class MetadataPredictor(nn.Module):
         a_progress_pred = self.a_progress_info_head(video_features)
         b_progress_pred = self.b_progress_info_head(video_features)
         return type_pred, place_pred, place_feature_pred, a_progress_pred, b_progress_pred
+    
+
+class CrossAttention(nn.Module):
+    def init(self, dim):
+        super().init()
+        self.query = nn.Linear(dim, dim)
+        self.key = nn.Linear(dim, dim)
+        self.value = nn.Linear(dim, dim)
+        self.scale = dim ** -0.5
+
+    def forward(self, x, context):
+        q = self.query(x)
+        k = self.key(context)
+        v = self.value(context)
+
+        attn = torch.matmul(q, k.transpose(-2, -1)) * self.scale
+        attn = F.softmax(attn, dim=-1)
+        out = torch.matmul(attn, v)
+        return out
