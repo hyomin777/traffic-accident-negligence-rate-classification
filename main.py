@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from video_classification.model import AccidentAnalysisModel
 from video_classification.dataset import TrafficAccidentDataset
-from utils import load_yolo_model
+from utils import load_yolo_model, compute_class_weights
 from config import DEVICE, MAX_FRAMES, BATCH_SIZE, EPOCHS, LR, NUM_NEGLIGENCE_CLASSES
 from train import train_model, test_model
 
@@ -87,13 +87,15 @@ def main():
     if weights_exist:
         pretrained_state_dict = torch.load(args.model_weights)
         model.load_state_dict(pretrained_state_dict)
-        
+    
+    class_weights = compute_class_weights(annotation_dir)
     trained_model = train_model(
         model=model,
         train_loader=train_loader,
         val_loader=val_loader,
+        weights=class_weights,
         num_epochs=args.epochs,
-        lr=args.lr
+        lr=args.lr,
     )
 
     accuracy, confusion_matrix, report = test_model(trained_model, test_loader)

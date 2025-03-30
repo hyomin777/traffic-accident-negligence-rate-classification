@@ -1,6 +1,9 @@
 import torch
+from collections import Counter
+import json
+from pathlib import Path
 import numpy as np
-from config import MAX_DETACTIONS, NEGLIGENCE_CATEGORIES
+from config import MAX_DETACTIONS, NEGLIGENCE_CATEGORIES, NUM_NEGLIGENCE_CLASSES
 from ultralytics import YOLO
 
 
@@ -50,19 +53,29 @@ def get_negligence_category(rateA:int):
     category = f"{rateA}:{rateB}"
     return NEGLIGENCE_CATEGORIES[category]
 
-def compute_class_weights(dataset, num_classes):
-    counts = [0] * num_classes
-    for sample in dataset:
-        label = int(sample['negligence_category'])
-        counts[label] += 1
+def compute_class_weights(annotation_dir, smoothing=1.0, num_classes=NUM_NEGLIGENCE_CLASSES):
+    counts = Counter()
+    annotation_dir = Path(annotation_dir)
+    
+    for json_file in annotation_dir.glob("*.json"):
+        with open(json_file, 'r') as f:
+            data = json.load(f)
 
-    weights = []
-    for count in counts:
-        if count > 0:
-            weights.append(1.0 / count)
+        if 'accident_negligence_rate' in data['video']:
+            rateA = data['video']['accident_negligence_rate']
         else:
-            weights.append(0.0)
-    weight_tensor = torch.tensor(weights, dtype=torch.float32)
+            rateA = data['video'].get('accident_negligence_rateA', 50)
 
-    weight_tensor = weight_tensor * num_classes / weight_tensor.sum()
+        label = get_negligence_category(rateA)
+        counts[label] += 1
+    
+    total = sum(counts.values())
+    weights = []
+    for i in range(num_classes):
+        count = counts.get(i, 0)
+        weight = 1.0 / (count + smoothing)
+        weights.append(weight)
+
+    weight_tensor = torch.tensor(weights)
+    weight_tensor = weight_tensor * num_classes / weight_tensor.sum()  # normalize
     return weight_tensor
