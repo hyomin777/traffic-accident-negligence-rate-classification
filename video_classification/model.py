@@ -84,11 +84,14 @@ class AccidentAnalysisModel(nn.Module):
         self.fusion = nn.Sequential(
             nn.Linear(backbone_out_dim + 256 + 128, 512),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            nn.Dropout(0.6),
             nn.Linear(512, 256),
             nn.ReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(256, 128),
+            nn.ReLU(),
             nn.Dropout(0.3),
-            nn.Linear(256, num_classes)
+            nn.Linear(128, num_classes)
         )
     
     def forward(self, frames, yolo_detections):
