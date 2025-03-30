@@ -53,7 +53,7 @@ def get_negligence_category(rateA:int):
     category = f"{rateA}:{rateB}"
     return NEGLIGENCE_CATEGORIES[category]
 
-def compute_class_weights(annotation_dir, smoothing=1.0, num_classes=NUM_NEGLIGENCE_CLASSES):
+def compute_class_weights(annotation_dir, smoothing=0.5, num_classes=NUM_NEGLIGENCE_CLASSES):
     counts = Counter()
     annotation_dir = Path(annotation_dir)
     
@@ -69,13 +69,18 @@ def compute_class_weights(annotation_dir, smoothing=1.0, num_classes=NUM_NEGLIGE
         label = get_negligence_category(rateA)
         counts[label] += 1
     
-    total = sum(counts.values())
+    total_samples = sum(counts.values())
+    
     weights = []
     for i in range(num_classes):
         count = counts.get(i, 0)
-        weight = 1.0 / (count + smoothing)
-        weights.append(weight)
+        if count == 0: 
+            weights.append(10.0)
+        else:
+            weight = (total_samples / (count + smoothing)) ** 1.5
+            weights.append(weight)
 
     weight_tensor = torch.tensor(weights)
-    weight_tensor = weight_tensor * num_classes / weight_tensor.sum()  # normalize
+    weight_tensor = weight_tensor * num_classes / weight_tensor.sum()
+    print("Class weights:", weight_tensor)
     return weight_tensor
