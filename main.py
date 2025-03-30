@@ -5,8 +5,15 @@ from torchvision import transforms
 from video_classification.model import AccidentAnalysisModel
 from video_classification.dataset import TrafficAccidentDataset
 from utils import load_yolo_model, compute_class_weights
-from config import DEVICE, MAX_FRAMES, BATCH_SIZE, EPOCHS, LR, NUM_NEGLIGENCE_CLASSES
 from train import train_model, test_model
+from config import (
+    DEVICE, 
+    MAX_FRAMES, 
+    BATCH_SIZE, 
+    EPOCHS, 
+    LR,
+    NUM_NEGLIGENCE_CLASSES
+)
 
 
 def parse_args():

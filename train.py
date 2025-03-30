@@ -4,14 +4,15 @@ import torch.optim as optim
 import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import confusion_matrix, classification_report
-from config import DEVICE, EPOCHS, LR, AUX_LAMBDA, NUM_NEGLIGENCE_CLASSES
+from video_classification.loss import FocalLoss
+from config import DEVICE, EPOCHS, LR, AUX_LAMBDA, GAMMA, AUX_GAMMA, NUM_NEGLIGENCE_CLASSES
 
 
 def train_model(model: nn.Module, train_loader, val_loader, weights, num_epochs=EPOCHS, lr=LR):
     model = model.to(DEVICE)
 
-    criterion = nn.CrossEntropyLoss(weight=weights).to(DEVICE)
-    aux_criterion = nn.CrossEntropyLoss().to(DEVICE)
+    criterion = FocalLoss(weight=weights, gamma=GAMMA).to(DEVICE)
+    aux_criterion = FocalLoss(gamma=AUX_GAMMA).to(DEVICE)
     aux_lambda = AUX_LAMBDA
     
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
