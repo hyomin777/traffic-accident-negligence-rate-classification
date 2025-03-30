@@ -50,3 +50,19 @@ def get_negligence_category(rateA:int):
     category = f"{rateA}:{rateB}"
     return NEGLIGENCE_CATEGORIES[category]
 
+def compute_class_weights(dataset, num_classes):
+    counts = [0] * num_classes
+    for sample in dataset:
+        label = int(sample['negligence_category'])
+        counts[label] += 1
+
+    weights = []
+    for count in counts:
+        if count > 0:
+            weights.append(1.0 / count)
+        else:
+            weights.append(0.0)
+    weight_tensor = torch.tensor(weights, dtype=torch.float32)
+
+    weight_tensor = weight_tensor * num_classes / weight_tensor.sum()
+    return weight_tensor

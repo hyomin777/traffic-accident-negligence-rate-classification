@@ -4,13 +4,15 @@ import torch.optim as optim
 import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import confusion_matrix, classification_report
+from utils import compute_class_weights
 from config import DEVICE, EPOCHS, LR, AUX_LAMBDA, NUM_NEGLIGENCE_CLASSES
 
 
 def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, lr=LR):
     model = model.to(DEVICE)
     
-    criterion = nn.CrossEntropyLoss().to(DEVICE)
+    weights = compute_class_weights(train_loader.dataset, NUM_NEGLIGENCE_CLASSES).to(DEVICE)
+    criterion = nn.CrossEntropyLoss(weight=weights).to(DEVICE)
     aux_criterion = nn.CrossEntropyLoss().to(DEVICE)
     aux_lambda = AUX_LAMBDA
     
@@ -70,7 +72,7 @@ def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, l
             train_total += targets.size(0)
             train_correct += predicted.eq(targets).sum().item()
 
-            if batch_idx % 20 == 0:
+            if batch_idx % 100 == 0:
                 print(f'Epoch: {epoch+1}/{num_epochs}, Batch: {batch_idx}/{len(train_loader)}, Loss: {loss.item():.4f}')
         
         train_acc = 100.0 * train_correct / train_total
