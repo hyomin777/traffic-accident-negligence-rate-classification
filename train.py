@@ -158,7 +158,7 @@ def test_model(model, test_loader):
             targets = batch['negligence_category'].to(DEVICE)
             # metadata = batch['metadata'].to(DEVICE)
             
-            outputs = model(frames, yolo_detections, None)
+            outputs, _ = model(frames, yolo_detections, None)
             _, predicted = outputs.max(1)
             
             all_preds.extend(predicted.cpu().numpy())
