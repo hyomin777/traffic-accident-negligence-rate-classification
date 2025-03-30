@@ -95,7 +95,7 @@ def main():
         pretrained_state_dict = torch.load(args.model_weights)
         model.load_state_dict(pretrained_state_dict)
     
-    class_weights = compute_class_weights(annotation_dir)
+    class_weights = compute_class_weights(annotation_dir).to(DEVICE)
     trained_model = train_model(
         model=model,
         train_loader=train_loader,
