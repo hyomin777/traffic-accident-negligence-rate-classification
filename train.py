@@ -39,7 +39,7 @@ def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, l
             
             # AMP 자동 캐스팅 사용
             with torch.amp.autocast(DEVICE):
-                outputs, meta_preds = model(frames, yolo_detections, metadata)
+                outputs, meta_preds = model(frames, yolo_detections)
                 loss_cls = criterion(outputs, targets)
 
                 type_pred, place_pred, place_feature_pred, a_progress_info, b_progress_info = meta_preds
@@ -90,7 +90,7 @@ def train_model(model: nn.Module, train_loader, val_loader, num_epochs=EPOCHS, l
                 metadata = batch['metadata'].to(DEVICE, non_blocking=True)
                 
                 with torch.amp.autocast(DEVICE):
-                    outputs, meta_preds = model(frames, yolo_detections, metadata)
+                    outputs, meta_preds = model(frames, yolo_detections)
                     loss_cls = criterion(outputs, targets)
 
                     type_pred, place_pred, place_feature_pred, a_progress_info, b_progress_info = meta_preds
@@ -158,7 +158,7 @@ def test_model(model, test_loader):
             targets = batch['negligence_category'].to(DEVICE)
             # metadata = batch['metadata'].to(DEVICE)
             
-            outputs, _ = model(frames, yolo_detections, None)
+            outputs, _ = model(frames, yolo_detections)
             _, predicted = outputs.max(1)
             
             all_preds.extend(predicted.cpu().numpy())
