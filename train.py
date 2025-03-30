@@ -130,17 +130,18 @@ def train_model(model: nn.Module, train_loader, val_loader, weights, num_epochs=
               f'Val Loss: {val_loss/len(val_loader):.4f}, '
               f'Val Acc: {val_acc:.2f}%')
         
+        print(f'Model saved with accuracy: {val_acc:.2f}%')
+        print("\nConfusion Matrix:")
+        print(confusion)
+            
+        class_acc = confusion.diag().float() / confusion.sum(1).float() * 100
+        for i, acc in enumerate(class_acc):
+            print(f'Class {i} (Negligence {i*10}:{100-i*10}): {acc:.2f}%')
+        
         # 모델 저장 조건
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             torch.save(model.state_dict(), 'best_accident_model.pth')
-            print(f'Model saved with accuracy: {val_acc:.2f}%')
-            print("\nConfusion Matrix:")
-            print(confusion)
-            
-            class_acc = confusion.diag().float() / confusion.sum(1).float() * 100
-            for i, acc in enumerate(class_acc):
-                print(f'Class {i} (Negligence {i*10}:{100-i*10}): {acc:.2f}%')
     
     return model
 
