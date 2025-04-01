@@ -39,8 +39,8 @@ class BaseTrafficAccidentDataset(Dataset):
                 continue
             
             if 'accident_negligence_rate' in data['video']:
-                rateA = data['video']['accident_negligence_rate']
-                rateB = 100 - rateA
+                rateB = data['video']['accident_negligence_rate']
+                rateA = 100 - rateB
             else:
                 rateA = data['video'].get('accident_negligence_rateA', 50)
                 rateB = data['video'].get('accident_negligence_rateB', 50)
@@ -49,6 +49,7 @@ class BaseTrafficAccidentDataset(Dataset):
             accident_type = int(data['video'].get('traffic_accident_type', 0))
             accident_place = int(data['video'].get('accident_place', 0))
             accident_place_feature = int(data['video'].get('accident_place_feature', 0))
+
             vehicle_a_progress = int(data['video'].get('vehicle_a_progress_info', 0))
             vehicle_b_progress = int(data['video'].get('vehicle_b_progress_info', 0))
 
@@ -150,7 +151,7 @@ class BaseTrafficAccidentDataset(Dataset):
         frames_tensor = torch.stack(frames)  # (T, C, H, W)
         yolo_tensor = torch.stack(yolo_tensors)  # (T, max_detections, 6)
         
-        negligence_category = get_negligence_category(sample['rateA'])
+        negligence_category = get_negligence_category(sample['rateB'])
         
         metadata = torch.tensor([
             sample['accident_type'],
