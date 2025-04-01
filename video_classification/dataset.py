@@ -40,9 +40,7 @@ class BaseTrafficAccidentDataset(Dataset):
             
             if 'accident_negligence_rate' in data['video']:
                 rateB = data['video']['accident_negligence_rate']
-                rateA = 100 - rateB
             else:
-                rateA = data['video'].get('accident_negligence_rateA', 50)
                 rateB = data['video'].get('accident_negligence_rateB', 50)
             
             video_point_of_view = int(data['video'].get('video_point_of_view', 3))
@@ -77,11 +75,12 @@ class BaseTrafficAccidentDataset(Dataset):
                 print(f"[{json_file.name}] Excluding sample due to out-of-range vehicle_b_progress_info: {vehicle_b_progress}")
                 unavailable_data_cnt += 1
                 continue
+
+            negligence_category = get_negligence_category(rateB)
             
             self.samples.append({
                 'video_path': str(video_path),
-                'rateA': rateA,
-                'rateB': rateB,
+                'negligence_category': negligence_category,
                 'accident_type': accident_type,
                 'accident_place': accident_place,
                 'accident_place_feature': accident_place_feature,
@@ -151,8 +150,6 @@ class BaseTrafficAccidentDataset(Dataset):
         frames_tensor = torch.stack(frames)  # (T, C, H, W)
         yolo_tensor = torch.stack(yolo_tensors)  # (T, max_detections, 6)
         
-        negligence_category = get_negligence_category(sample['rateB'])
-        
         metadata = torch.tensor([
             sample['accident_type'],
             sample['accident_place'],
@@ -164,7 +161,7 @@ class BaseTrafficAccidentDataset(Dataset):
         return {
             'frames': frames_tensor,
             'yolo_detections': yolo_tensor,
-            'negligence_category': negligence_category,
+            'negligence_category': sample['negligence_category'],
             'metadata': metadata
         }
     
