@@ -129,8 +129,6 @@ def train_model(model: nn.Module, train_loader, val_loader, weights, num_epochs=
               f'Train Acc: {train_acc:.2f}%, '
               f'Val Loss: {val_loss/len(val_loader):.4f}, '
               f'Val Acc: {val_acc:.2f}%')
-        
-        print(f'Model saved with accuracy: {val_acc:.2f}%')
         print("\nConfusion Matrix:")
         print(confusion)
             
@@ -142,6 +140,7 @@ def train_model(model: nn.Module, train_loader, val_loader, weights, num_epochs=
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             torch.save(model.state_dict(), 'best_accident_model.pth')
+            print(f'Model saved with accuracy: {val_acc:.2f}%')
     
     return model
 

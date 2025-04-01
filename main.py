@@ -1,7 +1,8 @@
 import argparse
-import torch
 from pathlib import Path
-from torch.utils.data import DataLoader
+import numpy as np
+import torch
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from torchvision import transforms
 from video_classification.model import AccidentAnalysisModel
 from video_classification.dataset import TrainDataset, ValDataset
@@ -74,8 +75,19 @@ def main():
         val_dataset, [val_size, test_size]
     )
     
+    targets = [sample['negligence_category'] for sample in train_dataset.samples]
+    class_counts = np.bincount(targets)
+    class_weights = 1. / class_counts
+    sample_weights = [class_weights[target] for target in targets]
+    sampler = WeightedRandomSampler(
+        weights=sample_weights,
+        num_samples=len(sample_weights),
+        replacement=True
+    )
+
     train_loader = DataLoader(
         train_dataset,
+        sampler=sampler,
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=4,
