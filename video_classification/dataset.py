@@ -188,9 +188,9 @@ class TrainDataset(BaseTrafficAccidentDataset):
         
         results = detect_objects_in_frame(self.yolo_model, frame)
         yolo_tensor = yolo_results_to_tensor(results)
-        
-        pil_frame = T.ToPILImage()(torch.from_numpy(frame))
-        
+
+        pil_frame = T.ToPILImage()(torch.from_numpy(frame).permute(2, 0, 1))
+
         if self.augment and np.random.random() < 0.5:
             pil_frame = self.aug_transform(pil_frame)
         
@@ -210,7 +210,7 @@ class ValDataset(BaseTrafficAccidentDataset):
         results = detect_objects_in_frame(self.yolo_model, frame)
         yolo_tensor = yolo_results_to_tensor(results)
         
-        pil_frame = T.ToPILImage()(torch.from_numpy(frame))
+        pil_frame = T.ToPILImage()(torch.from_numpy(frame).permute(2, 0, 1))
         
         if self.transform:
             frame_tensor = self.transform(pil_frame)
