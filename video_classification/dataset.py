@@ -15,9 +15,9 @@ from config import IMAGE_SIZE, NUM_ACCIDENT_TYPES, NUM_ACCIDENT_PLACES, NUM_ACCI
 
 
 class BaseTrafficAccidentDataset(Dataset):
-    def __init__(self, data_dir, transform=None, max_frames=32, frame_interval=3, yolo_model=None):
-        self.video_dir = Path(data_dir) / 'data'
-        self.annotation_dir = Path(data_dir) / 'annotation'
+    def __init__(self, data_dir: Path, transform=None, max_frames=32, frame_interval=3, yolo_model=None):
+        self.video_dir = data_dir / 'data'
+        self.annotation_dir = data_dir / 'annotation'
         self.transform = transform
         self.max_frames = max_frames
         self.frame_interval = frame_interval

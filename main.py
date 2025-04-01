@@ -1,5 +1,6 @@
 import argparse
 import torch
+from pathlib import Path
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from video_classification.model import AccidentAnalysisModel
@@ -42,8 +43,8 @@ def parse_args():
 
 def main():
     args = parse_args()
-    train_dir = args.train_dir
-    val_dir = args.val_dir
+    train_dir = Path(args.train_dir)
+    val_dir = Path(args.val_dir)
     
     transform = transforms.Compose([
         transforms.ToTensor(),
