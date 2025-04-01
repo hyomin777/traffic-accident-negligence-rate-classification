@@ -5,6 +5,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 import torch
 from torch.utils.data import Dataset
+from torchvision import transforms as T
 import numpy as np
 import json
 import cv2
@@ -13,7 +14,7 @@ from utils import load_yolo_model, detect_objects_in_frame, yolo_results_to_tens
 from config import IMAGE_SIZE, NUM_ACCIDENT_TYPES, NUM_ACCIDENT_PLACES, NUM_ACCIDENT_PLACE_FEATURES, NUM_VEHICLE_A_PROGRESS_INFO, NUM_VEHICLE_B_PROGRESS_INFO
 
 
-class TrafficAccidentDataset(Dataset):
+class BaseTrafficAccidentDataset(Dataset):
     def __init__(self, video_dir, annotation_dir, transform=None, max_frames=32, frame_interval=3, yolo_model=None):
         self.video_dir = Path(video_dir)
         self.annotation_dir = Path(annotation_dir)
@@ -43,12 +44,16 @@ class TrafficAccidentDataset(Dataset):
                 rateA = data['video'].get('accident_negligence_rateA', 50)
                 rateB = data['video'].get('accident_negligence_rateB', 50)
             
+            video_point_of_view = int(data['video'].get('video_point_of_view', 3))
             accident_type = int(data['video'].get('traffic_accident_type', 0))
             accident_place = int(data['video'].get('accident_place', 0))
             accident_place_feature = int(data['video'].get('accident_place_feature', 0))
             vehicle_a_progress = int(data['video'].get('vehicle_a_progress_info', 0))
             vehicle_b_progress = int(data['video'].get('vehicle_b_progress_info', 0))
 
+            if video_point_of_view != 1:
+                print(f"[{json_file.name}] is not first person view")
+                continue
             if accident_type < 0 or accident_type >= NUM_ACCIDENT_TYPES:
                 print(f"[{json_file.name}] Excluding sample due to out-of-range accident_type: {accident_type}")
                 continue
@@ -79,6 +84,21 @@ class TrafficAccidentDataset(Dataset):
     def __len__(self):
         return len(self.samples)
     
+    def _load_and_preprocess_frame(self, frame, apply_transform=True):
+        frame = cv2.resize(frame, IMAGE_SIZE)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        results = detect_objects_in_frame(self.yolo_model, frame)
+        yolo_tensor = yolo_results_to_tensor(results)
+        
+        if apply_transform and self.transform:
+            frame = self.transform(frame)
+        else:
+            frame = torch.from_numpy(frame).float() / 255.0
+            frame = frame.permute(2, 0, 1)  # (H, W, C) -> (C, H, W)
+        
+        return frame, yolo_tensor
+        
     def __getitem__(self, idx):
         sample = self.samples[idx]
         video_path = sample['video_path']
@@ -100,20 +120,10 @@ class TrafficAccidentDataset(Dataset):
             
             if not ret:
                 continue
+                
+            processed_frame, yolo_tensor = self._process_frame(frame)
             
-            frame = cv2.resize(frame, IMAGE_SIZE)
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-            results = detect_objects_in_frame(self.yolo_model, frame)
-            yolo_tensor = yolo_results_to_tensor(results)
-            
-            if self.transform:
-                frame = self.transform(frame)
-            else:
-                frame = torch.from_numpy(frame).float() / 255.0
-                frame = frame.permute(2, 0, 1)  # (H, W, C) -> (C, H, W)
-            
-            frames.append(frame)
+            frames.append(processed_frame)
             yolo_tensors.append(yolo_tensor)
         
         cap.release()
@@ -148,3 +158,54 @@ class TrafficAccidentDataset(Dataset):
             'negligence_category': negligence_category,
             'metadata': metadata
         }
+    
+    def _process_frame(self, frame):
+        raise NotImplementedError("Subclasses must implement _process_frame")
+
+
+class TrainDataset(BaseTrafficAccidentDataset):
+    def __init__(self, video_dir, annotation_dir, transform=None, augment=True, max_frames=32, frame_interval=3, yolo_model=None):
+        super().__init__(video_dir, annotation_dir, transform, max_frames, frame_interval, yolo_model)
+        self.augment = augment
+        self.aug_transform = T.Compose([
+            T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+            T.RandomHorizontalFlip(p=0.5),
+            T.RandomAffine(degrees=10, translate=(0.1, 0.1), scale=(0.9, 1.1))
+        ])
+    
+    def _process_frame(self, frame):
+        frame = cv2.resize(frame, IMAGE_SIZE)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        results = detect_objects_in_frame(self.yolo_model, frame)
+        yolo_tensor = yolo_results_to_tensor(results)
+        
+        pil_frame = T.ToPILImage()(torch.from_numpy(frame))
+        
+        if self.augment and np.random.random() < 0.5:
+            pil_frame = self.aug_transform(pil_frame)
+        
+        if self.transform:
+            frame_tensor = self.transform(pil_frame)
+        else:
+            frame_tensor = T.ToTensor()(pil_frame)
+        
+        return frame_tensor, yolo_tensor
+
+
+class ValDataset(BaseTrafficAccidentDataset):
+    def _process_frame(self, frame):
+        frame = cv2.resize(frame, IMAGE_SIZE)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        results = detect_objects_in_frame(self.yolo_model, frame)
+        yolo_tensor = yolo_results_to_tensor(results)
+        
+        pil_frame = T.ToPILImage()(torch.from_numpy(frame))
+        
+        if self.transform:
+            frame_tensor = self.transform(pil_frame)
+        else:
+            frame_tensor = T.ToTensor()(pil_frame)
+        
+        return frame_tensor, yolo_tensor
