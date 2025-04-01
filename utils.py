@@ -40,7 +40,7 @@ def yolo_results_to_tensor(results, max_detections=MAX_DETACTIONS):
     if len(detections) > max_detections:
         detections = detections[np.argsort(-detections[:, 4])][:max_detections]
     else:
-        padding = np.zeros((max_dget_negligence_categoryetections - len(detections), 6))
+        padding = np.zeros((max_detections - len(detections), 6))
         detections = np.vstack([detections, padding])
     
     return torch.from_numpy(detections).float()
