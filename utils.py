@@ -40,17 +40,17 @@ def yolo_results_to_tensor(results, max_detections=MAX_DETACTIONS):
     if len(detections) > max_detections:
         detections = detections[np.argsort(-detections[:, 4])][:max_detections]
     else:
-        padding = np.zeros((max_detections - len(detections), 6))
+        padding = np.zeros((max_dget_negligence_categoryetections - len(detections), 6))
         detections = np.vstack([detections, padding])
     
     return torch.from_numpy(detections).float()
 
-def get_negligence_category(rateA:int):
-    rateA = max(0, min(100, rateA))
-    if rateA % 10 != 0:
-        rateA = rateA // 10 * 10 
-    rateB = 100 - rateA
-    category = f"{rateA}:{rateB}"
+def get_negligence_category(rateB:int):
+    rateB = max(0, min(100, rateB))
+    if rateB % 10 != 0:
+        rateB = rateB // 10 * 10 
+    rateA = 100 - rateB
+    category = f"{rateB}:{rateA}"
     return NEGLIGENCE_CATEGORIES[category]
 
 def compute_class_weights(annotation_dir, smoothing=0.5, num_classes=NUM_NEGLIGENCE_CLASSES):
