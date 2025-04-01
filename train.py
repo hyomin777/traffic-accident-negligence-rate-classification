@@ -8,12 +8,12 @@ from video_classification.loss import FocalLoss
 from config import DEVICE, EPOCHS, LR, AUX_LAMBDA, GAMMA, AUX_GAMMA, NUM_NEGLIGENCE_CLASSES
 
 
-def train_model(model: nn.Module, train_loader, val_loader, weights, num_epochs=EPOCHS, lr=LR):
+def train_model(model: nn.Module, train_loader, val_loader, weights, num_epochs=EPOCHS, lr=LR, aux_lambda=AUX_LAMBDA):
     model = model.to(DEVICE)
 
     criterion = FocalLoss(weight=weights, gamma=GAMMA).to(DEVICE)
     aux_criterion = FocalLoss(gamma=AUX_GAMMA).to(DEVICE)
-    aux_lambda = AUX_LAMBDA
+    aux_lambda = aux_lambda
     
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)

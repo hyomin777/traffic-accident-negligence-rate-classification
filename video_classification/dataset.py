@@ -15,9 +15,9 @@ from config import IMAGE_SIZE, NUM_ACCIDENT_TYPES, NUM_ACCIDENT_PLACES, NUM_ACCI
 
 
 class BaseTrafficAccidentDataset(Dataset):
-    def __init__(self, video_dir, annotation_dir, transform=None, max_frames=32, frame_interval=3, yolo_model=None):
-        self.video_dir = Path(video_dir)
-        self.annotation_dir = Path(annotation_dir)
+    def __init__(self, data_dir, transform=None, max_frames=32, frame_interval=3, yolo_model=None):
+        self.video_dir = Path(data_dir) / 'data'
+        self.annotation_dir = Path(data_dir) / 'annotation'
         self.transform = transform
         self.max_frames = max_frames
         self.frame_interval = frame_interval
@@ -164,8 +164,8 @@ class BaseTrafficAccidentDataset(Dataset):
 
 
 class TrainDataset(BaseTrafficAccidentDataset):
-    def __init__(self, video_dir, annotation_dir, transform=None, augment=True, max_frames=32, frame_interval=3, yolo_model=None):
-        super().__init__(video_dir, annotation_dir, transform, max_frames, frame_interval, yolo_model)
+    def __init__(self, data_dir, transform=None, augment=True, max_frames=32, frame_interval=3, yolo_model=None):
+        super().__init__(data_dir, transform, max_frames, frame_interval, yolo_model)
         self.augment = augment
         self.aug_transform = T.Compose([
             T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
