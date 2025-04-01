@@ -27,6 +27,7 @@ class BaseTrafficAccidentDataset(Dataset):
         self._load_annotations()
     
     def _load_annotations(self):
+        unavailable_data_cnt = 0
         for json_file in self.annotation_dir.glob("*.json"):
             with open(json_file, 'r') as f:
                 data = json.load(f)
@@ -53,21 +54,27 @@ class BaseTrafficAccidentDataset(Dataset):
 
             if video_point_of_view != 1:
                 print(f"[{json_file.name}] is not first person view")
+                unavailable_data_cnt += 1
                 continue
             if accident_type < 0 or accident_type >= NUM_ACCIDENT_TYPES:
                 print(f"[{json_file.name}] Excluding sample due to out-of-range accident_type: {accident_type}")
+                unavailable_data_cnt += 1
                 continue
             if accident_place < 0 or accident_place >= NUM_ACCIDENT_PLACES:
                 print(f"[{json_file.name}] Excluding sample due to out-of-range accident_place: {accident_place}")
+                unavailable_data_cnt += 1
                 continue
             if accident_place_feature < 0 or accident_place_feature >= NUM_ACCIDENT_PLACE_FEATURES:
                 print(f"[{json_file.name}] Excluding sample due to out-of-range accident_place_feature: {accident_place_feature}")
+                unavailable_data_cnt += 1
                 continue
             if vehicle_a_progress < 0 or vehicle_a_progress >= NUM_VEHICLE_A_PROGRESS_INFO:
                 print(f"[{json_file.name}] Excluding sample due to out-of-range vehicle_a_progress_info: {vehicle_a_progress}")
+                unavailable_data_cnt += 1
                 continue
             if vehicle_b_progress < 0 or vehicle_b_progress >= NUM_VEHICLE_B_PROGRESS_INFO:
                 print(f"[{json_file.name}] Excluding sample due to out-of-range vehicle_b_progress_info: {vehicle_b_progress}")
+                unavailable_data_cnt += 1
                 continue
             
             self.samples.append({
@@ -80,7 +87,8 @@ class BaseTrafficAccidentDataset(Dataset):
                 'vehicle_a_progress': vehicle_a_progress,
                 'vehicle_b_progress': vehicle_b_progress
             })
-    
+        print(f"Num of Unavailable Data : {unavailable_data_cnt}")
+
     def __len__(self):
         return len(self.samples)
     
