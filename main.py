@@ -77,6 +77,7 @@ def main():
     
     targets = [sample['negligence_category'] for sample in train_dataset.samples]
     class_counts = np.bincount(targets)
+    print(f"class count : {class_counts}")
     class_weights = 1. / class_counts
     sample_weights = [class_weights[target] for target in targets]
     sampler = WeightedRandomSampler(

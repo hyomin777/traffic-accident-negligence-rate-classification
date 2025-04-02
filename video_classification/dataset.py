@@ -52,27 +52,21 @@ class BaseTrafficAccidentDataset(Dataset):
             vehicle_b_progress = int(data['video'].get('vehicle_b_progress_info', 0))
 
             if video_point_of_view != 1:
-                print(f"[{json_file.name}] is not first person view")
                 unavailable_data_cnt += 1
                 continue
             if accident_type < 0 or accident_type >= NUM_ACCIDENT_TYPES:
-                print(f"[{json_file.name}] Excluding sample due to out-of-range accident_type: {accident_type}")
                 unavailable_data_cnt += 1
                 continue
             if accident_place < 0 or accident_place >= NUM_ACCIDENT_PLACES:
-                print(f"[{json_file.name}] Excluding sample due to out-of-range accident_place: {accident_place}")
                 unavailable_data_cnt += 1
                 continue
             if accident_place_feature < 0 or accident_place_feature >= NUM_ACCIDENT_PLACE_FEATURES:
-                print(f"[{json_file.name}] Excluding sample due to out-of-range accident_place_feature: {accident_place_feature}")
                 unavailable_data_cnt += 1
                 continue
             if vehicle_a_progress < 0 or vehicle_a_progress >= NUM_VEHICLE_A_PROGRESS_INFO:
-                print(f"[{json_file.name}] Excluding sample due to out-of-range vehicle_a_progress_info: {vehicle_a_progress}")
                 unavailable_data_cnt += 1
                 continue
             if vehicle_b_progress < 0 or vehicle_b_progress >= NUM_VEHICLE_B_PROGRESS_INFO:
-                print(f"[{json_file.name}] Excluding sample due to out-of-range vehicle_b_progress_info: {vehicle_b_progress}")
                 unavailable_data_cnt += 1
                 continue
 
