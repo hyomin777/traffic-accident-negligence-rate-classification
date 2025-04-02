@@ -90,7 +90,6 @@ def main():
         train_dataset,
         sampler=sampler,
         batch_size=args.batch_size,
-        shuffle=True,
         num_workers=4,
         pin_memory=True
     )
