@@ -1,8 +1,11 @@
-import torch
-from collections import Counter
 import json
+import math
 from pathlib import Path
+from collections import Counter
+
+import torch
 import numpy as np
+
 from config import MAX_DETACTIONS, NEGLIGENCE_CATEGORIES, NUM_NEGLIGENCE_CLASSES
 from ultralytics import YOLO
 
@@ -77,7 +80,8 @@ def compute_class_weights(annotation_dir, smoothing=0.5, num_classes=NUM_NEGLIGE
         if count == 0: 
             weights.append(10.0)
         else:
-            weight = (total_samples / (count + smoothing)) ** 1.5
+            raw_weight = total_samples / (count + smoothing)
+            weight = math.log1p(raw_weight)
             weights.append(weight)
 
     weight_tensor = torch.tensor(weights)

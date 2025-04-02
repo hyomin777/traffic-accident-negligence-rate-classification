@@ -9,8 +9,17 @@ from video_classification.loss import FocalLoss
 from config import DEVICE, EPOCHS, LR, AUX_LAMBDA, GAMMA, AUX_GAMMA, NUM_NEGLIGENCE_CLASSES
 
 
-def train_model(model: nn.Module, train_loader, val_loader, weights, num_epochs=EPOCHS, lr=LR, aux_lambda=AUX_LAMBDA):
-    writer = SummaryWriter(log_dir='runs/experiment')
+def train_model(
+        model: nn.Module,
+        train_loader,
+        val_loader,
+        weights,
+        num_epochs=EPOCHS,
+        lr=LR,
+        aux_lambda=AUX_LAMBDA,
+        experiment_name="experiment"
+    ):
+    writer = SummaryWriter(log_dir=f'runs/{experiment_name}')
     model = model.to(DEVICE)
 
     criterion = FocalLoss(weight=weights, gamma=GAMMA).to(DEVICE)

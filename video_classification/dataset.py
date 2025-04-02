@@ -44,7 +44,10 @@ class BaseTrafficAccidentDataset(Dataset):
                 rateB = data['video'].get('accident_negligence_rateB', 50)
             
             video_point_of_view = int(data['video'].get('video_point_of_view', 3))
-            accident_type = int(data['video'].get('traffic_accident_type', 0))
+            accident_type = data['video'].get('traffic_accident_type')
+            if not accident_type:
+                accident_type = data['video'].get('accident_type', 0)
+            accident_type = int(accident_type)
             accident_place = int(data['video'].get('accident_place', 0))
             accident_place_feature = int(data['video'].get('accident_place_feature', 0))
 
