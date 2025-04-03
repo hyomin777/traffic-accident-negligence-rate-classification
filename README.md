@@ -35,7 +35,7 @@ The model consists of the following main components:
 
 1. Clone the repository:
 ```bash
-git clone [repository-url]
+git clone https://github.com/hyomin777/traffic-accident-negligence-rate-classification.git
 cd traffic-accident-negligence-rate-classification
 ```
 
