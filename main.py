@@ -9,10 +9,10 @@ from video_classification.dataset import TrainDataset, ValDataset
 from utils import load_yolo_model, compute_class_weights
 from train import train_model, test_model
 from config import (
-    DEVICE, 
-    MAX_FRAMES, 
-    BATCH_SIZE, 
-    EPOCHS, 
+    DEVICE,
+    MAX_FRAMES,
+    BATCH_SIZE,
+    EPOCHS,
     LR,
     AUX_LAMBDA,
     NUM_NEGLIGENCE_CLASSES
@@ -40,6 +40,7 @@ def parse_args():
                         help=f"Initial learning rate (default: {LR})")
     parser.add_argument("--aux_lambda", type=float, default=AUX_LAMBDA,
                         help=f"Aux lambda for training (default: {AUX_LAMBDA})")
+    parser.add_argument("--experiment_name", type=str, default="experiment")
     return parser.parse_args()
 
 def main():
@@ -76,9 +77,16 @@ def main():
     )
     
     targets = [sample['negligence_category'] for sample in train_dataset.samples]
+
     class_counts = np.bincount(targets)
+    print(f"class count : {class_counts}")
+
     class_weights = 1. / class_counts
+    class_weights = class_weights / class_weights.sum()
+
     sample_weights = [class_weights[target] for target in targets]
+    sample_weights = torch.tensor(sample_weights, dtype=torch.double)
+
     sampler = WeightedRandomSampler(
         weights=sample_weights,
         num_samples=len(sample_weights),
@@ -89,7 +97,6 @@ def main():
         train_dataset,
         sampler=sampler,
         batch_size=args.batch_size,
-        shuffle=True,
         num_workers=4,
         pin_memory=True
     )
@@ -124,7 +131,8 @@ def main():
         weights=class_weights,
         num_epochs=args.epochs,
         lr=args.lr,
-        aux_lambda=args.aux_lambda
+        aux_lambda=args.aux_lambda,
+        experiment_name=args.experiment_name
     )
 
     accuracy, confusion_matrix, report = test_model(trained_model, test_loader)

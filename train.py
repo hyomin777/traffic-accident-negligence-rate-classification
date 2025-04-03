@@ -1,14 +1,25 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from sklearn.metrics import confusion_matrix, classification_report
 from video_classification.loss import FocalLoss
 from config import DEVICE, EPOCHS, LR, AUX_LAMBDA, GAMMA, AUX_GAMMA, NUM_NEGLIGENCE_CLASSES
 
 
-def train_model(model: nn.Module, train_loader, val_loader, weights, num_epochs=EPOCHS, lr=LR, aux_lambda=AUX_LAMBDA):
+def train_model(
+        model: nn.Module,
+        train_loader,
+        val_loader,
+        weights,
+        num_epochs=EPOCHS,
+        lr=LR,
+        aux_lambda=AUX_LAMBDA,
+        experiment_name="experiment"
+    ):
+    writer = SummaryWriter(log_dir=f'runs/{experiment_name}')
     model = model.to(DEVICE)
 
     criterion = FocalLoss(weight=weights, gamma=GAMMA).to(DEVICE)
@@ -23,7 +34,7 @@ def train_model(model: nn.Module, train_loader, val_loader, weights, num_epochs=
     
     best_val_acc = 0.0
     
-    for epoch in tqdm(range(num_epochs), desc="Epochs"):
+    for epoch in tqdm(range(1, num_epochs+1), desc="Epochs"):
         model.train()
         train_loss = 0.0
         train_correct = 0
@@ -72,9 +83,12 @@ def train_model(model: nn.Module, train_loader, val_loader, weights, num_epochs=
             train_correct += predicted.eq(targets).sum().item()
 
             if batch_idx % 100 == 0:
-                print(f'Epoch: {epoch+1}/{num_epochs}, Batch: {batch_idx}/{len(train_loader)}, Loss: {loss.item():.4f}')
+                print(f'Epoch: {epoch}/{num_epochs}, Batch: {batch_idx}/{len(train_loader)}, Loss: {loss.item():.4f}')
         
         train_acc = 100.0 * train_correct / train_total
+
+        writer.add_scalar('Loss/train', train_loss, epoch)
+        writer.add_scalar('Accuracy/train', train_acc, epoch)
         
         # validation
         model.eval()
@@ -123,8 +137,11 @@ def train_model(model: nn.Module, train_loader, val_loader, weights, num_epochs=
         
         val_acc = 100.0 * val_correct / val_total
         scheduler.step()
+
+        writer.add_scalar('Loss/val', val_loss, epoch)
+        writer.add_scalar('Accuracy/val', val_acc, epoch)
         
-        print(f'Epoch {epoch+1}/{num_epochs}, '
+        print(f'Epoch {epoch}/{num_epochs}, '
               f'Train Loss: {train_loss/len(train_loader):.4f}, '
               f'Train Acc: {train_acc:.2f}%, '
               f'Val Loss: {val_loss/len(val_loader):.4f}, '

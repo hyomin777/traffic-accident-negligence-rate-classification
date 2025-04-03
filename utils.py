@@ -1,8 +1,11 @@
-import torch
-from collections import Counter
 import json
+import math
 from pathlib import Path
+from collections import Counter
+
+import torch
 import numpy as np
+
 from config import MAX_DETACTIONS, NEGLIGENCE_CATEGORIES, NUM_NEGLIGENCE_CLASSES
 from ultralytics import YOLO
 
@@ -62,11 +65,11 @@ def compute_class_weights(annotation_dir, smoothing=0.5, num_classes=NUM_NEGLIGE
             data = json.load(f)
 
         if 'accident_negligence_rate' in data['video']:
-            rateA = data['video']['accident_negligence_rate']
+            rateB = data['video']['accident_negligence_rate']
         else:
-            rateA = data['video'].get('accident_negligence_rateA', 50)
+            rateB = data['video'].get('accident_negligence_rateB', 50)
 
-        label = get_negligence_category(rateA)
+        label = get_negligence_category(rateB)
         counts[label] += 1
     
     total_samples = sum(counts.values())
@@ -77,7 +80,8 @@ def compute_class_weights(annotation_dir, smoothing=0.5, num_classes=NUM_NEGLIGE
         if count == 0: 
             weights.append(10.0)
         else:
-            weight = (total_samples / (count + smoothing)) ** 1.5
+            raw_weight = total_samples / (count + smoothing)
+            weight = math.log1p(raw_weight)
             weights.append(weight)
 
     weight_tensor = torch.tensor(weights)
