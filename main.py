@@ -40,21 +40,26 @@ def parse_args():
                         help=f"Initial learning rate (default: {LR})")
     parser.add_argument("--aux_lambda", type=float, default=AUX_LAMBDA,
                         help=f"Aux lambda for training (default: {AUX_LAMBDA})")
-    parser.add_argument("--experiment_name", type=str, default="experiment")
+    parser.add_argument("--experiment_name", type=str, default="experiment",
+                        help="Name of the experiment for checkpoint and tensorboard logging")
+    parser.add_argument("--resume", action="store_true",
+                        help="Resume training from the last checkpoint")
     return parser.parse_args()
+
 
 def main():
     args = parse_args()
     train_dir = Path(args.train_dir)
     val_dir = Path(args.val_dir)
-    
+
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
+                             0.229, 0.224, 0.225])
     ])
-    
+
     yolo_model = load_yolo_model(args.yolo_weights).to(DEVICE)
-    
+
     train_dataset = TrainDataset(
         data_dir=train_dir,
         transform=transform,
@@ -68,15 +73,16 @@ def main():
         max_frames=MAX_FRAMES,
         yolo_model=yolo_model
     )
-    
+
     val_size = int(0.8 * len(val_dataset))
     test_size = len(val_dataset) - val_size
-    
+
     val_dataset, test_dataset = torch.utils.data.random_split(
         val_dataset, [val_size, test_size]
     )
-    
-    targets = [sample['negligence_category'] for sample in train_dataset.samples]
+
+    targets = [sample['negligence_category']
+               for sample in train_dataset.samples]
 
     class_counts = np.bincount(targets)
     print(f"class count : {class_counts}")
@@ -100,7 +106,7 @@ def main():
         num_workers=4,
         pin_memory=True
     )
-    
+
     val_loader = DataLoader(
         val_dataset,
         batch_size=args.batch_size,
@@ -108,7 +114,7 @@ def main():
         num_workers=4,
         pin_memory=True
     )
-    
+
     test_loader = DataLoader(
         test_dataset,
         batch_size=args.batch_size,
@@ -118,11 +124,12 @@ def main():
     )
 
     weights_exist = True if args.model_weights != "" else False
-    model = AccidentAnalysisModel(num_classes=NUM_NEGLIGENCE_CLASSES, weights_exist=weights_exist)
+    model = AccidentAnalysisModel(
+        num_classes=NUM_NEGLIGENCE_CLASSES, weights_exist=weights_exist)
     if weights_exist:
         pretrained_state_dict = torch.load(args.model_weights)
         model.load_state_dict(pretrained_state_dict)
-    
+
     class_weights = compute_class_weights(train_dir / 'annotation').to(DEVICE)
     trained_model = train_model(
         model=model,
@@ -132,16 +139,18 @@ def main():
         num_epochs=args.epochs,
         lr=args.lr,
         aux_lambda=args.aux_lambda,
-        experiment_name=args.experiment_name
+        experiment_name=args.experiment_name,
+        resume=args.resume
     )
 
     accuracy, confusion_matrix, report = test_model(trained_model, test_loader)
-    
+
     print(f"Test Accuracy: {accuracy:.2f}%")
     print("\nConfusion Matrix:")
     print(confusion_matrix)
     print("\nClassification Report:")
     print(report)
+
 
 if __name__ == "__main__":
     import multiprocessing as mp
