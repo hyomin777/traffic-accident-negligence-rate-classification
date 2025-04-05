@@ -45,6 +45,12 @@ def load_checkpoint(model, optimizer, scheduler, scaler, experiment_name):
     return 1, 0.0
 
 
+def save_weights(model, experiment_name):
+    weights_dir = Path('weights')
+    weights_dir.mkdir(exist_ok=True)
+    torch.save(model.state_dict(), f'{experiment_name}_weights.pth')
+
+
 def train_model(
     model: nn.Module,
     train_loader,
@@ -211,9 +217,8 @@ def train_model(
         # 모델 저장 조건
         if val_acc > best_val_acc:
             best_val_acc = val_acc
-            torch.save(model.state_dict(), 'best_accident_model.pth')
+            save_weights(model, experiment_name)
             print(f'Model saved with accuracy: {val_acc:.2f}%')
-
     return model
 
 
