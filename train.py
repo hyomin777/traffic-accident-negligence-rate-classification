@@ -23,7 +23,6 @@ def save_checkpoint(epoch, model, optimizer, scheduler, scaler, best_val_acc, ex
 
     checkpoint_dir = Path('checkpoints')
     checkpoint_dir.mkdir(exist_ok=True)
-
     checkpoint_path = checkpoint_dir / f'{experiment_name}_checkpoint.pth'
     torch.save(checkpoint, checkpoint_path)
     print(f'Checkpoint saved at epoch {epoch}')
@@ -45,10 +44,13 @@ def load_checkpoint(model, optimizer, scheduler, scaler, experiment_name):
     return 1, 0.0
 
 
-def save_weights(model, experiment_name):
+def save_weights(model, val_acc, experiment_name):
     weights_dir = Path('weights')
     weights_dir.mkdir(exist_ok=True)
-    torch.save(model.state_dict(), f'{experiment_name}_weights.pth')
+    weigths_path = weights_dir / f'{experiment_name}_{val_acc}.pth'
+    torch.save(model.state_dict(), weigths_path)
+    print(f'Model saved with accuracy: {val_acc:.2f}%')
+
 
 
 def train_model(
@@ -217,8 +219,7 @@ def train_model(
         # 모델 저장 조건
         if val_acc > best_val_acc:
             best_val_acc = val_acc
-            save_weights(model, experiment_name)
-            print(f'Model saved with accuracy: {val_acc:.2f}%')
+            save_weights(model, val_acc, experiment_name)
     return model
 
 
